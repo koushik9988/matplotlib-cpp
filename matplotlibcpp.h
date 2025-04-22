@@ -2983,4 +2983,35 @@ private:
     PyObject* set_data_fct = nullptr;
 };
 
+inline void imshow(const std::vector<std::vector<double>>& data, const std::string& cmap = "viridis", const std::string& origin = "upper",const std::string& interpolation = "nearest") 
+{
+    size_t rows = data.size();
+    if (rows == 0) throw std::runtime_error("imshow: data has zero rows.");
+    size_t cols = data[0].size();
+
+    std::vector<double> flat_data;
+    for (const auto& row : data)
+    {
+        if (row.size() != cols) throw std::runtime_error("imshow: inconsistent row sizes.");
+        flat_data.insert(flat_data.end(), row.begin(), row.end());
+    }
+
+    npy_intp dims[2] = { (npy_intp)rows, (npy_intp)cols };
+    PyObject* np_data = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, (void*)flat_data.data());
+
+    PyObject* kwargs = PyDict_New();
+    PyDict_SetItemString(kwargs, "cmap", PyUnicode_FromString(cmap.c_str()));
+    PyDict_SetItemString(kwargs, "origin", PyUnicode_FromString(origin.c_str()));
+    PyDict_SetItemString(kwargs, "interpolation", PyUnicode_FromString(interpolation.c_str()));
+
+    PyObject* plot_args = PyTuple_Pack(1, np_data);
+    PyObject* plot_result = PyObject_Call(PyObject_GetAttrString(PyImport_ImportModule("matplotlib.pyplot"), "imshow"),plot_args, kwargs);
+
+    Py_XDECREF(plot_args);
+    Py_XDECREF(kwargs);
+    Py_XDECREF(plot_result);
+    Py_XDECREF(np_data);
+}
+
+
 } // end namespace matplotlibcpp
